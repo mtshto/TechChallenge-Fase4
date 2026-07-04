@@ -566,7 +566,7 @@ if page == "🔮 Sistema Preditivo":
                 r=values + [values[0]],
                 theta=categories + [categories[0]],
                 fill="toself",
-                fillcolor=COLOR_MAP[pred_class] + "55",
+                fillcolor=rgba(198, 40, 40, 0.33),
                 line=dict(color=COLOR_MAP[pred_class], width=2),
                 name="Paciente",
             ))
