@@ -899,10 +899,4 @@ else:
                 unsafe_allow_html=True,
             )
 
-    # ── ROW 6 – TABELA ─────────────────────────────────
-    st.markdown("---")
-    st.markdown('<div class="section-title">📋 Dados Brutos</div>',
-                unsafe_allow_html=True)
-    with st.expander("Visualizar amostra dos dados"):
-        st.dataframe(df_f.head(100), use_container_width=True, hide_index=True)
-        st.caption(f"Exibindo 100 de {len(df_f):,} registros filtrados.")
+
