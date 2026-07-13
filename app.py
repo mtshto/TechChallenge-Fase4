@@ -743,9 +743,10 @@ else:
     with r2c1:
         bmi_box = df_f.copy()
         bmi_box["Nível"] = bmi_box["Obesity"].map(LABEL_PT)
+        COLOR_MAP_DASH_PT = {LABEL_PT[k]: v for k, v in COLOR_MAP_DASH.items()}
         fig3 = px.box(
             bmi_box, x="Nível", y="BMI",
-            color="Obesity", color_discrete_map=COLOR_MAP_DASH,
+            color="Nível", color_discrete_map=COLOR_MAP_DASH_PT,
             title="Distribuição do IMC por Nível de Obesidade",
             labels={"Nível": "", "BMI": "IMC (kg/m²)"},
             category_orders={"Nível": [LABEL_PT[o] for o in ORDER]},
@@ -760,11 +761,12 @@ else:
         fig4 = px.scatter(
             sc_df.sample(min(600, len(sc_df)), random_state=42),
             x="Age", y="BMI",
-            color="Obesity", color_discrete_map=COLOR_MAP_DASH,
+            color="Nível", color_discrete_map=COLOR_MAP_DASH_PT,
             opacity=0.65,
             title="Relação Idade × IMC",
-            labels={"Age": "Idade (anos)", "BMI": "IMC"},
+            labels={"Age": "Idade (anos)", "BMI": "IMC", "Nível": "Nível"},
             hover_data=["Weight", "Height"],
+            category_orders={"Nível": [LABEL_PT[o] for o in ORDER]},
         )
         fig4.update_layout(legend_title="Nível", margin=dict(t=40))
         st.plotly_chart(fig4, use_container_width=True)
@@ -920,6 +922,3 @@ else:
                 f'<div class="insight-box"><strong>{title}</strong><br>{text}</div>',
                 unsafe_allow_html=True,
             )
-
-
-# =============TESTE=============
