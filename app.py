@@ -45,9 +45,34 @@ COLOR_MAP = {
     "Obesity_Type_III":     "#1b5e20",  # verde muito escuro
 }
 
-# Cor de destaque para gênero e outros bináries — ainda dentro do verde
-COLOR_F  = "#b2dfdb"   # verde-água feminino
-COLOR_M  = "#80cbc4"   # verde-água masculino
+COLOR_MAP_DASH = {
+    "Insufficient_Weight":  "#81c784",  # verde
+    "Normal_Weight":        "#aed581",  # verde claro
+    "Overweight_Level_I":   "#fff176",  # amarelo
+    "Overweight_Level_II":  "#ffb74d",  # laranja
+    "Obesity_Type_I":       "#ff8a65",  # laranja avermelhado
+    "Obesity_Type_II":      "#ef5350",  # vermelho
+    "Obesity_Type_III":     "#c62828",  # vermelho escuro
+}
+
+COLOR_MAP_STEPS = {
+            "Insufficient_Weight": "#acd6ae",
+            "Normal_Weight":       "#c8df7a",
+            "Overweight_Level_I":  "#fff38a",
+            "Overweight_Level_II": "#ffc96b",
+            "Obesity_Type_I":      "#ffa285",
+            "Obesity_Type_II":     "#ec8482",
+            "Obesity_Type_III":    "#db6666",
+}
+
+
+COLOR_F = "#FD3DB5"
+COLOR_M = '#0000FF'
+#Cor de destaque para gênero e outros bináries — ainda dentro do verde
+# COLOR_F  = "#b2dfdb"   # verde-água feminino
+# COLOR_M  = "#80cbc4"   # verde-água masculino
+
+
 
 # ──────────────────────────────────────────────────────────
 # ESTILOS CUSTOMIZADOS
@@ -84,7 +109,7 @@ st.markdown("""
 .section-title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #1b5e20;
+    color: #2e7d32;
     border-left: 4px solid #66bb6a;
     padding-left: 12px;
     margin-bottom: 16px;
@@ -201,7 +226,7 @@ def load_model():
         return _train_fallback_model()
 
 
-def _train_fallback_model():
+def _train_fallback_model(): # O prefixo _ indica que essa é uma função de uso interno do programa  (Uma convenão em Python, não uma regra)
     import lightgbm as lgb
     from sklearn.preprocessing import LabelEncoder, StandardScaler
 
@@ -209,8 +234,8 @@ def _train_fallback_model():
     dw = df.copy()
     for col in ["FCVC", "NCP", "CH2O", "FAF", "TUE"]:
         dw[col] = dw[col].round().astype(int)
-    dw["BMI"] = dw["Weight"] / (dw["Height"] ** 2)
-    dw["risk_score"] = (
+    dw["BMI"] = dw["Weight"] / (dw["Height"] ** 2) # cria coluna BMI (IMC)
+    dw["risk_score"] = ( #Essa coluna é uma engenharia de atributos (feature engineering).Ela cria uma pontuação baseada em hábitos considerados de risco.
         (dw["FAVC"] == "yes").astype(int) * 2 +
         (dw["family_history"] == "yes").astype(int) * 2 +
         (dw["SMOKE"] == "yes").astype(int) +
@@ -220,25 +245,25 @@ def _train_fallback_model():
         (dw["CALC"] == "Always").astype(int) * 2 +
         (dw["CALC"] == "Frequently").astype(int)
     )
-    dw["healthy_score"] = (
+    dw["healthy_score"] = ( # conta hábitos saudáveis
         (dw["FAF"] >= 2).astype(int) * 2 +
         (dw["FCVC"] >= 2).astype(int) +
         (dw["CH2O"] >= 2).astype(int) +
         (dw["SCC"] == "yes").astype(int) +
         dw["MTRANS"].isin(["Walking", "Bike"]).astype(int)
     )
-    for col in ["Gender", "family_history", "FAVC", "SMOKE", "SCC"]:
+    for col in ["Gender", "family_history", "FAVC", "SMOKE", "SCC"]: # Transforma texto em números
         dw[col] = dw[col].map({"Male": 1, "Female": 0, "yes": 1, "no": 0}).fillna(0).astype(int)
     dw["CAEC"] = dw["CAEC"].map({"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3})
     dw["CALC"] = dw["CALC"].map({"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3})
     dw = pd.get_dummies(dw, columns=["MTRANS"], drop_first=False)
 
-    label_order = [
+    label_order = [ # define as ordem das classses
         "Insufficient_Weight", "Normal_Weight", "Overweight_Level_I",
         "Overweight_Level_II", "Obesity_Type_I", "Obesity_Type_II", "Obesity_Type_III",
     ]
     le = LabelEncoder()
-    le.fit(label_order)
+    le.fit(label_order) # Aprende a correspondência ex: insullficient: 0, Normal:1...
     X = dw.drop(columns=["Obesity"])
     y = le.transform(dw["Obesity"])
     scaler = StandardScaler()
@@ -253,7 +278,7 @@ def _train_fallback_model():
     }
     return model, scaler, le, meta
 
-
+# Essa função prepara os dados de entrada exatamente da mesma forma que foi feito durante o treinamento do modelo.
 def engineer_features(input_df: pd.DataFrame, feature_columns: list) -> pd.DataFrame:
     df = input_df.copy()
     for col in ["FCVC", "NCP", "CH2O", "FAF", "TUE"]:
@@ -351,6 +376,7 @@ if page == "🔮 Sistema Preditivo":
         "e recomendações clínicas personalizadas."
     )
     st.markdown("---")
+    
 
     with st.form("prediction_form"):
         st.markdown('<div class="section-title">👤 Dados Antropométricos e Demográficos</div>',
@@ -434,10 +460,11 @@ if page == "🔮 Sistema Preditivo":
         with st.spinner("Analisando dados do paciente..."):
             pred_class, proba = predict_obesity(inputs, model, scaler, le, meta)
 
-        cor_fundo = COLOR_MAP[pred_class]
+        cor_fundo = COLOR_MAP_STEPS[pred_class]
+        cor_letra = COLOR_MAP_DASH[pred_class]
         st.markdown(f"""
-        <div class="pred-box" style="background:{cor_fundo}22; border: 2px solid {cor_fundo}; color:#1b5e20;">
-            <h1>🌿 {LABEL_PT[pred_class]}</h1>
+        <div class="pred-box" style="background:{cor_fundo}22; border: 2px solid {cor_fundo}; color:{cor_letra};">
+            <h1>🩺 {LABEL_PT[pred_class]}</h1>
             <p>Diagnóstico preditivo baseado nos dados informados</p>
         </div>
         """, unsafe_allow_html=True)
@@ -462,14 +489,34 @@ if page == "🔮 Sistema Preditivo":
                 margin=dict(l=10, r=10, t=10, b=10),
                 yaxis=dict(categoryorder="array",
                            categoryarray=[LABEL_PT[c] for c in ORDER]),
-                plot_bgcolor="#f1f8f2",
-                paper_bgcolor="#f1f8f2",
+                #plot_bgcolor="#f1f8f2",
+                #paper_bgcolor="#f1f8f2",
             )
             fig_prob.update_traces(textposition="outside")
             st.plotly_chart(fig_prob, use_container_width=True)
 
         col_g1, col_g2 = st.columns(2)
 
+        COLOR_MAP_STEPS = {
+            "Insufficient_Weight": "#b7ddb8",
+            "Normal_Weight":       "#d4e68a",
+            "Overweight_Level_I":  "#fff59d",
+            "Overweight_Level_II": "#ffd180",
+            "Obesity_Type_I":      "#ffab91",
+            "Obesity_Type_II":     "#ef9a9a",
+            "Obesity_Type_III":    "#ef9a9a",
+        }
+
+        # Barra (mais escura)
+        COLOR_MAP_BAR = {
+            "Insufficient_Weight": "#388e3c",
+            "Normal_Weight":       "#689f38",
+            "Overweight_Level_I":  "#fbc02d",
+            "Overweight_Level_II": "#f57c00",
+            "Obesity_Type_I":      "#e64a19",
+            "Obesity_Type_II":     "#c62828",
+            "Obesity_Type_III":    "#8e0000",
+        }
         # Gauge IMC
         with col_g1:
             fig_gauge = go.Figure(go.Indicator(
@@ -478,18 +525,18 @@ if page == "🔮 Sistema Preditivo":
                 title={"text": "IMC do Paciente"},
                 gauge={
                     "axis": {"range": [10, 50]},
-                    "bar": {"color": COLOR_MAP[pred_class]},
+                    "bar": {"color": COLOR_MAP_BAR[pred_class]},
                     "steps": [
-                        {"range": [10, 18.5], "color": "#e8f5e9"},
-                        {"range": [18.5, 25],  "color": "#c8e6c9"},
-                        {"range": [25, 30],    "color": "#a5d6a7"},
-                        {"range": [30, 35],    "color": "#81c784"},
-                        {"range": [35, 40],    "color": "#66bb6a"},
-                        {"range": [40, 50],    "color": "#43a047"},
+                        {"range": [10, 18.5], "color": "#acd6ae"},
+                        {"range": [18.5, 25],  "color": "#c8df7a"},
+                        {"range": [25, 30],    "color": "#fff38a"},
+                        {"range": [30, 35],    "color": "#ffc96b"},
+                        {"range": [35, 40],    "color": "#ffa285"},
+                        {"range": [40, 50],    "color": "#ec8482"},
                     ],
                     "threshold": {
-                        "line": {"color": "#1b5e20", "width": 3},
-                        "thickness": 0.8,
+                        "line": {"color": "black", "width": 3},
+                        "thickness": 0.9,
                         "value": bmi_calc,
                     },
                 },
@@ -498,7 +545,7 @@ if page == "🔮 Sistema Preditivo":
             fig_gauge.update_layout(
                 height=260,
                 margin=dict(l=20, r=20, t=40, b=10),
-                paper_bgcolor="#f1f8f2",
+                #paper_bgcolor="#f1f8f2",
             )
             st.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -550,7 +597,7 @@ if page == "🔮 Sistema Preditivo":
                 height=260,
                 margin=dict(l=40, r=40, t=40, b=20),
                 title="Perfil do Paciente",
-                paper_bgcolor="#f1f8f2",
+                #paper_bgcolor="#f1f8f2",
             )
             st.plotly_chart(fig_radar, use_container_width=True)
 
@@ -646,7 +693,7 @@ else:
 
     LAYOUT_BASE = dict(
         plot_bgcolor="#f1f8f2",
-        paper_bgcolor="#f1f8f2",
+        paper_bgcolor="#081709",
         font=dict(color="#1b5e20"),
     )
 
@@ -667,8 +714,9 @@ else:
             labels={"Nível": "", "Quantidade": "Pacientes"},
         )
         fig1.update_traces(textposition="outside")
-        fig1.update_layout(showlegend=False, margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig1.update_xaxes(tickangle=30)
+        fig1.update_layout(showlegend=False, margin=dict(t=40, b=60))
+        fig1.update_xaxes(tickangle=-30)
+        fig1.update_yaxes(showgrid=False, showticklabels = False)
         st.plotly_chart(fig1, use_container_width=True)
 
     with r1c2:
@@ -682,8 +730,8 @@ else:
             labels={"Nível": "", "Quantidade": "Pacientes"},
             color_discrete_map={"Feminino": COLOR_F, "Masculino": COLOR_M},
         )
-        fig2.update_layout(margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig2.update_xaxes(tickangle=30)
+        fig2.update_layout(margin=dict(t=40, b=60))
+        fig2.update_xaxes(tickangle=-30)
         st.plotly_chart(fig2, use_container_width=True)
 
     # ── ROW 2: IMC ──────────────────────────────────
@@ -697,16 +745,13 @@ else:
         bmi_box["Nível"] = bmi_box["Obesity"].map(LABEL_PT)
         fig3 = px.box(
             bmi_box, x="Nível", y="BMI",
-            color="Obesity", color_discrete_map=COLOR_MAP,
+            color="Obesity", color_discrete_map=COLOR_MAP_DASH,
             title="Distribuição do IMC por Nível de Obesidade",
             labels={"Nível": "", "BMI": "IMC (kg/m²)"},
             category_orders={"Nível": [LABEL_PT[o] for o in ORDER]},
         )
-        fig3.add_hline(y=18.5, line_dash="dash", line_color="#43a047", annotation_text="18,5")
-        fig3.add_hline(y=25,   line_dash="dash", line_color="#2e7d32", annotation_text="25")
-        fig3.add_hline(y=30,   line_dash="dash", line_color="#1b5e20", annotation_text="30")
-        fig3.update_layout(showlegend=False, margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig3.update_xaxes(tickangle=30)
+        fig3.update_layout(showlegend=False, margin=dict(t=40, b=60))
+        fig3.update_xaxes(tickangle=-30)
         st.plotly_chart(fig3, use_container_width=True)
 
     with r2c2:
@@ -715,13 +760,13 @@ else:
         fig4 = px.scatter(
             sc_df.sample(min(600, len(sc_df)), random_state=42),
             x="Age", y="BMI",
-            color="Obesity", color_discrete_map=COLOR_MAP,
+            color="Obesity", color_discrete_map=COLOR_MAP_DASH,
             opacity=0.65,
             title="Relação Idade × IMC",
             labels={"Age": "Idade (anos)", "BMI": "IMC"},
             hover_data=["Weight", "Height"],
         )
-        fig4.update_layout(legend_title="Nível", margin=dict(t=40), **LAYOUT_BASE)
+        fig4.update_layout(legend_title="Nível", margin=dict(t=40))
         st.plotly_chart(fig4, use_container_width=True)
 
     # ── ROW 3: Fatores de risco ───────────────────────
@@ -742,11 +787,12 @@ else:
             fp, x="Nível", y="Percentual",
             color="Obesity", color_discrete_map=COLOR_MAP,
             title="% com Histórico Familiar",
-            labels={"Nível": "", "Percentual": "%"},
+            labels={"Nível": "", "Percentual": ""},
             text=fp["Percentual"].round(1).astype(str) + "%",
         )
-        fig5.update_layout(showlegend=False, margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig5.update_xaxes(tickangle=30)
+        fig5.update_layout(showlegend=False, margin=dict(t=40, b=60))
+        fig5.update_xaxes(tickangle=-30)
+        fig5.update_yaxes(showgrid= False, showticklabels = False)
         st.plotly_chart(fig5, use_container_width=True)
 
     with r3c2:
@@ -760,8 +806,9 @@ else:
             text=fm["FAF"].round(2),
         )
         fig6.update_traces(textposition="outside")
-        fig6.update_layout(showlegend=False, margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig6.update_xaxes(tickangle=30)
+        fig6.update_layout(showlegend=False, margin=dict(t=40, b=60))
+        fig6.update_xaxes(tickangle=-30)
+        fig6.update_yaxes(showgrid = False, showticklabels = False)
         st.plotly_chart(fig6, use_container_width=True)
 
     with r3c3:
@@ -776,11 +823,12 @@ else:
             fc, x="Nível", y="Percentual",
             color="Obesity", color_discrete_map=COLOR_MAP,
             title="% que Consome Alimentos Calóricos",
-            labels={"Nível": "", "Percentual": "%"},
+            labels={"Nível": "", "Percentual": ""},
             text=fc["Percentual"].round(1).astype(str) + "%",
         )
-        fig7.update_layout(showlegend=False, margin=dict(t=40, b=60), **LAYOUT_BASE)
-        fig7.update_xaxes(tickangle=30)
+        fig7.update_layout(showlegend=False, margin=dict(t=40, b=60))
+        fig7.update_xaxes(tickangle=-30)
+        fig7.update_yaxes(showgrid = False, showticklabels = False)
         st.plotly_chart(fig7, use_container_width=True)
 
     # ── ROW 4: Transporte e correlação ───────────────
@@ -790,7 +838,8 @@ else:
     r4c1, r4c2 = st.columns(2)
 
     with r4c1:
-        mt = df_f.groupby(["MTRANS", "Obesity"]).size().reset_index(name="Quantidade")
+        mt = df_f[df_f["Obesity"].str.contains("Obesity")].copy()
+
         mt["Transporte"] = mt["MTRANS"].map({
             "Public_Transportation": "Transp. Público",
             "Walking": "A pé",
@@ -798,16 +847,28 @@ else:
             "Motorbike": "Moto",
             "Bike": "Bicicleta",
         })
-        fig8 = px.bar(
-            mt, x="Transporte", y="Quantidade",
-            color="Obesity", color_discrete_map=COLOR_MAP,
-            title="Meio de Transporte por Nível de Obesidade",
-            labels={"Transporte": "Transporte", "Quantidade": "Pacientes"},
-            barmode="stack",
-        )
-        fig8.update_layout(legend_title="Nível", margin=dict(t=40), **LAYOUT_BASE)
-        st.plotly_chart(fig8, use_container_width=True)
 
+        fig8 = px.histogram(
+            mt,
+            x="Transporte",
+            text_auto=True,
+            title="Obesidade por tipos de transporte",
+        )
+
+        # Define todas as barras como verdes
+        fig8.update_traces(
+            marker_color="green"
+        )
+
+        fig8.update_layout(
+            xaxis_title="",
+            yaxis_title="",
+        )
+        fig8.update_layout(margin=dict(t=50))
+        fig8.update_yaxes(showgrid = False, showticklabels = False)
+        
+        st.plotly_chart(fig8, use_container_width=True)
+       
     with r4c2:
         num_cols = ["Age", "BMI", "FCVC", "NCP", "CH2O", "FAF", "TUE"]
         corr_df  = df_f[num_cols].corr().round(2)
@@ -819,9 +880,9 @@ else:
             title="Correlação entre Variáveis Numéricas",
             aspect="auto",
         )
-        fig9.update_layout(margin=dict(t=50), **LAYOUT_BASE)
+        fig9.update_layout(margin=dict(t=50))
         st.plotly_chart(fig9, use_container_width=True)
-
+    
     # ── ROW 5: Insights ──────────────────────────────
     st.markdown("---")
     st.markdown('<div class="section-title">💡 Principais Insights para a Equipe Médica</div>',
@@ -859,3 +920,6 @@ else:
                 f'<div class="insight-box"><strong>{title}</strong><br>{text}</div>',
                 unsafe_allow_html=True,
             )
+
+
+# =============TESTE=============
