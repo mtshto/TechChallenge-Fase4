@@ -1,15 +1,3 @@
-"""
-============================================================
- Tech Challenge – Fase 04 | POSTECH Data Analytics
- Aplicação Streamlit: Sistema Preditivo + Dashboard Analítico
- de Obesidade
-============================================================
- Para rodar:
-   pip install streamlit pandas numpy scikit-learn xgboost lightgbm matplotlib seaborn plotly
-   streamlit run app.py
-============================================================
-"""
-
 import os
 import pickle
 import warnings
@@ -21,9 +9,6 @@ import plotly.graph_objects as go
 
 warnings.filterwarnings("ignore")
 
-# ──────────────────────────────────────────────────────────
-# CONFIGURAÇÃO DA PÁGINA
-# ──────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Predição de Obesidade | POSTECH",
     page_icon="🏥",
@@ -31,10 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ──────────────────────────────────────────────────────────
-# PALETA VERDE PASTEL
-# ──────────────────────────────────────────────────────────
-# Escala única de verde: do mais claro (peso insuficiente) ao mais escuro (obesidade III)
+
 COLOR_MAP = {
     "Insufficient_Weight":  "#c8e6c9",  # verde muito claro
     "Normal_Weight":        "#a5d6a7",  # verde claro
@@ -68,15 +50,8 @@ COLOR_MAP_STEPS = {
 
 COLOR_F = "#FD3DB5"
 COLOR_M = '#0000FF'
-#Cor de destaque para gênero e outros bináries — ainda dentro do verde
-# COLOR_F  = "#b2dfdb"   # verde-água feminino
-# COLOR_M  = "#80cbc4"   # verde-água masculino
 
 
-
-# ──────────────────────────────────────────────────────────
-# ESTILOS CUSTOMIZADOS
-# ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 .main { background-color: #f1f8f2; }
@@ -128,9 +103,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────────────────
 # CONSTANTES
-# ──────────────────────────────────────────────────────────
 ORDER = [
     "Insufficient_Weight", "Normal_Weight",
     "Overweight_Level_I", "Overweight_Level_II",
@@ -198,9 +171,7 @@ def fmt_num(n: int) -> str:
     return f"{n:,}".replace(",", ".")
 
 
-# ──────────────────────────────────────────────────────────
 # CARREGAMENTO DE DADOS E MODELO
-# ──────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
     paths = ["Obesity.csv", "data/Obesity.csv",
@@ -226,7 +197,7 @@ def load_model():
         return _train_fallback_model()
 
 
-def _train_fallback_model(): # O prefixo _ indica que essa é uma função de uso interno do programa  (Uma convenão em Python, não uma regra)
+def _train_fallback_model(): 
     import lightgbm as lgb
     from sklearn.preprocessing import LabelEncoder, StandardScaler
 
@@ -234,7 +205,7 @@ def _train_fallback_model(): # O prefixo _ indica que essa é uma função de us
     dw = df.copy()
     for col in ["FCVC", "NCP", "CH2O", "FAF", "TUE"]:
         dw[col] = dw[col].round().astype(int)
-    dw["BMI"] = dw["Weight"] / (dw["Height"] ** 2) # cria coluna BMI (IMC)
+    dw["BMI"] = dw["Weight"] / (dw["Height"] ** 2) # cria coluna IMC 
     dw["risk_score"] = ( #Essa coluna é uma engenharia de atributos (feature engineering).Ela cria uma pontuação baseada em hábitos considerados de risco.
         (dw["FAVC"] == "yes").astype(int) * 2 +
         (dw["family_history"] == "yes").astype(int) * 2 +
@@ -333,9 +304,7 @@ def hex_to_rgba(hex_color: str, alpha: float) -> str:
     return f"rgba({r},{g},{b},{alpha})"
 
 
-# ──────────────────────────────────────────────────────────
 # INICIALIZAÇÃO
-# ──────────────────────────────────────────────────────────
 df_raw = load_data()
 model, scaler, le, meta = load_model()
 
@@ -344,9 +313,7 @@ df_dash["BMI"] = df_dash["Weight"] / (df_dash["Height"] ** 2)
 df_dash["Obesity_PT"] = df_dash["Obesity"].map(LABEL_PT)
 
 
-# ──────────────────────────────────────────────────────────
 # SIDEBAR
-# ──────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🏥 Predição de Obesidade")
     st.markdown("**POSTECH – Tech Challenge Fase 04**")
@@ -365,9 +332,7 @@ with st.sidebar:
     st.markdown("*Desenvolvido para apoiar a equipe médica na tomada de decisão clínica.*")
 
 
-# ══════════════════════════════════════════════════════════
 # PÁGINA 1 – SISTEMA PREDITIVO
-# ══════════════════════════════════════════════════════════
 if page == "🔮 Sistema Preditivo":
 
     st.markdown("# 🔮 Sistema Preditivo de Obesidade")
@@ -545,7 +510,6 @@ if page == "🔮 Sistema Preditivo":
             fig_gauge.update_layout(
                 height=260,
                 margin=dict(l=20, r=20, t=40, b=10),
-                #paper_bgcolor="#f1f8f2",
             )
             st.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -597,7 +561,6 @@ if page == "🔮 Sistema Preditivo":
                 height=260,
                 margin=dict(l=40, r=40, t=40, b=20),
                 title="Perfil do Paciente",
-                #paper_bgcolor="#f1f8f2",
             )
             st.plotly_chart(fig_radar, use_container_width=True)
 
@@ -643,9 +606,7 @@ if page == "🔮 Sistema Preditivo":
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
 
-# ══════════════════════════════════════════════════════════
 # PÁGINA 2 – DASHBOARD ANALÍTICO
-# ══════════════════════════════════════════════════════════
 else:
     st.markdown("# 📊 Dashboard Analítico – Obesidade")
     st.markdown(
@@ -654,7 +615,7 @@ else:
     )
     st.markdown("---")
 
-    # ── KPIs ──────────────────────────────────────────
+    # Indicadores
     total     = len(df_dash)
     obesos    = df_dash["Obesity"].isin(["Obesity_Type_I", "Obesity_Type_II", "Obesity_Type_III"]).sum()
     sobrepeso = df_dash["Obesity"].isin(["Overweight_Level_I", "Overweight_Level_II"]).sum()
@@ -670,7 +631,7 @@ else:
 
     st.markdown("---")
 
-    # ── Filtros ────────────────────────────────────────
+    # Filtros 
     with st.expander("🔧 Filtros", expanded=False):
         col_f1, col_f2, col_f3 = st.columns(3)
         gen_filter = col_f1.multiselect(
@@ -697,7 +658,7 @@ else:
         font=dict(color="#1b5e20"),
     )
 
-    # ── ROW 1: Distribuição ──────────────────────────
+    #  Distribuição
     st.markdown('<div class="section-title">Distribuição e Perfil Demográfico</div>',
                 unsafe_allow_html=True)
     r1c1, r1c2 = st.columns(2)
@@ -734,7 +695,7 @@ else:
         fig2.update_xaxes(tickangle=-30)
         st.plotly_chart(fig2, use_container_width=True)
 
-    # ── ROW 2: IMC ──────────────────────────────────
+    # IMC 
     st.markdown("---")
     st.markdown('<div class="section-title">IMC e Idade por Nível de Obesidade</div>',
                 unsafe_allow_html=True)
@@ -771,7 +732,7 @@ else:
         fig4.update_layout(legend_title="Nível", margin=dict(t=40))
         st.plotly_chart(fig4, use_container_width=True)
 
-    # ── ROW 3: Fatores de risco ───────────────────────
+    # Fatores de risco 
     st.markdown("---")
     st.markdown('<div class="section-title">Fatores de Risco e Hábitos de Vida</div>',
                 unsafe_allow_html=True)
@@ -833,7 +794,7 @@ else:
         fig7.update_yaxes(showgrid = False, showticklabels = False)
         st.plotly_chart(fig7, use_container_width=True)
 
-    # ── ROW 4: Transporte e correlação ───────────────
+    # Transporte e correlação
     st.markdown("---")
     st.markdown('<div class="section-title">Transporte e Correlação entre Variáveis</div>',
                 unsafe_allow_html=True)
@@ -885,7 +846,7 @@ else:
         fig9.update_layout(margin=dict(t=50))
         st.plotly_chart(fig9, use_container_width=True)
     
-    # ── ROW 5: Insights ──────────────────────────────
+    # Insights 
     st.markdown("---")
     st.markdown('<div class="section-title">💡 Principais Insights para a Equipe Médica</div>',
                 unsafe_allow_html=True)
